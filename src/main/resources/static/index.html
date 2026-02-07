@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Venda de Ingressos - Show 2026</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 50px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
+        h2 { text-align: center; color: #333; }
+        select, input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🎟 Comprar Ingresso</h2>
+
+    <label>Escolha o Setor:</label>
+    <select id="setor">
+    </select>
+
+    <input type="text" id="nome" placeholder="Seu Nome Completo">
+    <input type="text" id="cpf" placeholder="Seu CPF">
+
+    <button onclick="realizarCompra()">Finalizar Compra</button>
+</div>
+
+<script>
+    // 1. Busca os setores do Java assim que a página carrega
+    async function carregarSetores() {
+        const resp = await fetch('/api/setores');
+        const setores = await resp.json();
+        const select = document.getElementById('setor');
+
+        setores.forEach((s, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.text = `${s.nome} - R$ ${s.preco.toFixed(2)} (Vagas: ${s.restante})`;
+            select.appendChild(opt);
+        });
+    }
+
+    // 2. Envia os dados para o Java e baixa o PNG
+    async function realizarCompra() {
+        const indice = document.getElementById('setor').value;
+        const nome = document.getElementById('nome').value;
+        const cpf = document.getElementById('cpf').value;
+
+        if(!nome || !cpf) return alert("Preencha tudo!");
+
+        const resp = await fetch(`/api/comprar?indice=${indice}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nome, cpf })
+        });
+
+        if(resp.ok) {
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ingresso.png';
+            a.click();
+            alert("Sucesso! Verifique seus downloads.");
+        } else {
+            alert("Erro na compra ou setor esgotado.");
+        }
+    }
+
+    carregarSetores();
+</script>
+
+</body>
+</html>
